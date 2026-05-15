@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GameState } from "@/lib/game/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AgentGossipPanel } from "./AgentGossipPanel";
 
 function Bar({
   label,
@@ -41,6 +42,7 @@ export function GameHUD({ state }: { state: GameState }) {
   const tasks = [
     { label: "Win the Commander's full trust (100)", done: state.trust.commander >= 100 },
     { label: "Win the Citizen's full trust (100)", done: state.trust.citizen >= 100 },
+    { label: "Win the Priest's trust and extract palace secrets", done: state.priestPalaceSecrets.length > 0 },
     {
       label: "Have the Citizen vouch for you to the Commander",
       done: state.citizenEndorsedCommander,
@@ -54,10 +56,12 @@ export function GameHUD({ state }: { state: GameState }) {
         <h2 className="font-display text-2xl text-primary">Day {state.day} of 5</h2>
         <span className="text-sm text-muted-foreground">{state.turnsLeft} words left today</span>
       </div>
+      <AgentGossipPanel conversations={state.agentConversations} dayNumber={state.day} />
 
       <div className="space-y-3">
         <Bar label="Commander's Trust" value={state.trust.commander} color="var(--trust)" />
         <Bar label="Citizen's Trust" value={state.trust.citizen} color="var(--trust)" />
+        <Bar label="Priest's Trust" value={state.trust.priest} color="var(--trust)" />
         <Dialog open={proofOpen} onOpenChange={setProofOpen}>
           <DialogTrigger asChild>
             <div>

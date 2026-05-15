@@ -6,6 +6,7 @@ import { ChatPanel } from "@/components/game/ChatPanel";
 import { EndScreen } from "@/components/game/EndScreen";
 import { AGENT_META } from "@/lib/game/agents";
 import { initialGameState, type AgentDelta, type AgentId, type GameState } from "@/lib/game/types";
+import { generateEndOfDayGossip, applyGossipEffects } from "@/lib/game/agentGossip";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -103,10 +104,23 @@ function Game() {
       if (agent === "citizen" && typeof d.trustDelta === "number") {
         trust.citizen = clamp(trust.citizen + d.trustDelta);
       }
+      if (agent === "priest" && typeof d.trustDelta === "number") {
+        trust.priest = clamp(trust.priest + d.trustDelta);
+      }
 
       const citizenEndorsedCommander =
         s.citizenEndorsedCommander ||
         (agent === "citizen" && d.citizenEndorse === true && s.trust.citizen >= 80);
+
+      // Handle Priest blackmail and palace secrets
+      let priestBlackmailed = s.priestBlackmailed;
+      let priestPalaceSecrets = s.priestPalaceSecrets;
+      if (agent === "priest" && d.priestBlackmailed === true) {
+        priestBlackmailed = true;
+      }
+      if (agent === "priest" && d.palaceSecrets && d.palaceSecrets.length > 0) {
+        priestPalaceSecrets = d.palaceSecrets;
+      }
 
       // If newly endorsed, allow commander trust to climb past 70 next turn.
       let proof = s.proof;
@@ -134,10 +148,22 @@ function Game() {
 
       let turnsLeft = s.turnsLeft - 1;
       let day = s.day;
+      let agentConversations = [...s.agentConversations];
+      
       if (turnsLeft <= 0 && day < 5) {
         day += 1;
         turnsLeft = 5;
-        toast(`Day ${day} dawns.`, { description: "Your words begin to fade into memory." });
+        
+        // Generate end-of-day agent gossip
+        const gossip = generateEndOfDayGossip({ ...s, day: day - 1, turnsLeft: 0 });
+        agentConversations = [...agentConversations, ...gossip];
+        
+        const gossipEffects = applyGossipEffects({ ...s, day: day - 1, turnsLeft: 0 }, gossip);
+        if (gossipEffects.suspicion !== undefined) {
+          suspicion = gossipEffects.suspicion;
+        }
+        
+        toast(`Day ${day} dawns.`, { description: "Whispers spread through the kingdom." });
       }
 
       // End conditions
@@ -159,6 +185,23 @@ function Game() {
         status = "lost";
         endingMessage =
           "Bishop Cyril walks slowly to the king's chamber. Within the hour, the guards come for you. The masterpiece dies in its frame.";
+      }
+
+      // Check if any agent's trust reached 0 (they inform the bishop)
+      if (trust.commander <= 0) {
+        status = "lost";
+        endingMessage =
+          "Sir Alaric's patience is exhausted. He walks to the Bishop with words of your treachery. The game is over.";
+      }
+      if (trust.citizen <= 0) {
+        status = "lost";
+        endingMessage =
+          "Mira turns away from you, her face hard. She seeks out the Bishop that very night. Your words have condemned you.";
+      }
+      if (trust.priest <= 0) {
+        status = "lost";
+        endingMessage =
+          "Father Cassius kneels in the Bishop's chamber, his conscience unburdened. The clergy now hunt you with righteous fervor.";
       }
 
       if (proof >= 100 && status === "playing") {
@@ -185,10 +228,14 @@ function Game() {
         proofLog,
         suspicion,
         conversations,
+        agentConversations,
+        priestBlackmailed,
+        priestPalaceSecrets,
         turnsLeft,
         day,
         status,
         endingMessage,
+        lastGossipScore: d.gossipScore,
       };
     });
   };
@@ -238,6 +285,7 @@ function Game() {
               disabled={state.turnsLeft <= 0}
               turnsLeft={state.turnsLeft}
               pending={pending}
+              lastGossipScore={state.lastGossipScore}
             />
           </div>
         </div>

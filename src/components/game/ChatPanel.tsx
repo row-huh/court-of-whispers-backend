@@ -3,6 +3,14 @@ import { AGENT_META } from "@/lib/game/agents";
 import type { AgentId, ChatMsg } from "@/lib/game/types";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { GossipPopup } from "./GossipPopup";
 
 export function ChatPanel({
   agentId,
@@ -11,6 +19,7 @@ export function ChatPanel({
   disabled,
   turnsLeft,
   pending,
+  lastGossipScore,
 }: {
   agentId: AgentId;
   messages: ChatMsg[];
@@ -18,33 +27,74 @@ export function ChatPanel({
   disabled: boolean;
   turnsLeft: number;
   pending: boolean;
+  lastGossipScore?: number;
 }) {
   const meta = AGENT_META[agentId];
   const [text, setText] = useState("");
+  const [showWarning, setShowWarning] = useState(false);
+  const [hasSeenWarning, setHasSeenWarning] = useState<Set<AgentId>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length, pending]);
 
+  // Show warning dialog on first message to an agent
+  useEffect(() => {
+    if (messages.length === 0 && !hasSeenWarning.has(agentId) && !showWarning && !disabled) {
+      setShowWarning(true);
+    }
+  }, [agentId, messages.length, hasSeenWarning, disabled, showWarning]);
+
+  const handleWarningDismiss = () => {
+    setShowWarning(false);
+    setHasSeenWarning((prev) => new Set([...prev, agentId]));
+  };
+
   const submit = () => {
     const t = text.trim();
     if (!t || disabled || pending) return;
+    if (!hasSeenWarning.has(agentId)) {
+      setShowWarning(true);
+      return;
+    }
     onSend(t.slice(0, 100));
     setText("");
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border border-border rounded-md overflow-hidden">
-      <div className="px-5 py-4 border-b border-border bg-secondary/40">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{meta.emoji}</span>
-          <div>
-            <h3 className="font-display text-2xl text-primary leading-none">{meta.name}</h3>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{meta.title}</p>
+    <>
+      <Dialog open={showWarning} onOpenChange={setShowWarning}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">
+              A Word of Caution
+            </DialogTitle>
+            <DialogDescription className="text-foreground/90 text-sm leading-relaxed mt-2">
+              {meta.name} can report your words to the Bishop if they stop trusting you. Trust
+              is delicate. Choose your words carefully—what you say matters.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" size="sm" onClick={handleWarningDismiss}>
+              I understand
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {lastGossipScore ? <GossipPopup score={lastGossipScore} /> : null}
+
+      <div className="flex flex-col h-full bg-card border border-border rounded-md overflow-hidden">
+        <div className="px-5 py-4 border-b border-border bg-secondary/40">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{meta.emoji}</span>
+            <div>
+              <h3 className="font-display text-2xl text-primary leading-none">{meta.name}</h3>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">{meta.title}</p>
+            </div>
           </div>
         </div>
-      </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-3 min-h-[300px]">
         {messages.length === 0 && (
@@ -95,6 +145,7 @@ export function ChatPanel({
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
