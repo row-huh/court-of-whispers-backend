@@ -145,7 +145,6 @@ function Game() {
         suspicion,
         proofLog,
         nightLog: [...s.nightLog, ...exchanges],
-        pendingNight: false,
         status,
         endingMessage,
       };
@@ -349,12 +348,13 @@ function Game() {
       if (s.day >= 5) {
         return {
           ...s,
+          pendingNight: false,
           status: "lost",
           endingMessage: "Five days, gone. The king holds his throne. Your performance ends with no audience but yourself.",
         };
       }
       toast(`Day ${s.day + 1} dawns.`, { description: "Your words begin to fade into memory." });
-      return { ...s, day: s.day + 1, turnsLeft: 5 };
+      return { ...s, pendingNight: false, day: s.day + 1, turnsLeft: 5 };
     });
   };
 
