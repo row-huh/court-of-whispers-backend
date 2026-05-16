@@ -5,6 +5,7 @@ import { GameHUD } from "@/components/game/GameHUD";
 import { ChatPanel } from "@/components/game/ChatPanel";
 import { EndScreen } from "@/components/game/EndScreen";
 import { NightRumors } from "@/components/game/NightRumors";
+import { KingdomMap } from "@/components/game/KingdomMap";
 import { AGENT_META } from "@/lib/game/agents";
 import {
   initialGameState,
@@ -15,12 +16,17 @@ import {
 } from "@/lib/game/types";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { Button } from "@/components/ui/button";
+import { MessageCircle, PanelRightOpen, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "The False Heir — A Game of Whispers and Treason" },
-      { name: "description", content: "Convince four souls to overthrow the king. An agentic social-engineering game." },
+      {
+        name: "description",
+        content: "Convince four souls to overthrow the king. An agentic social-engineering game.",
+      },
     ],
   }),
   component: Game,
@@ -31,6 +37,8 @@ const clamp = (n: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 function Game() {
   const [state, setState] = useState<GameState>(initialGameState);
   const [active, setActive] = useState<AgentId>("commander");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [nightLoading, setNightLoading] = useState(false);
   const nightFiredRef = useRef<number>(0); // last day we ran night for
@@ -111,7 +119,9 @@ function Game() {
             day: e.day,
             turn: 0,
             delta: e.effects.proofDelta,
-            evidence: e.effects.proofEvidence ?? `${AGENT_META[e.from].name} whispered to ${AGENT_META[e.to].name}.`,
+            evidence:
+              e.effects.proofEvidence ??
+              `${AGENT_META[e.from].name} whispered to ${AGENT_META[e.to].name}.`,
           });
         }
         if (e.effects.trustDeltas) {
@@ -126,16 +136,20 @@ function Game() {
       // Check end conditions from night
       let status = s.status;
       let endingMessage = s.endingMessage;
-      const ratted = (Object.keys(agents) as (keyof typeof agents)[]).find((k) => agents[k].trust <= 0);
+      const ratted = (Object.keys(agents) as (keyof typeof agents)[]).find(
+        (k) => agents[k].trust <= 0,
+      );
       if (ratted) {
         status = "lost";
         endingMessage = `${AGENT_META[ratted].name} walked to the Bishop in the dead of night. Your name was the first word spoken.`;
       } else if (proof >= 100) {
         status = "lost";
-        endingMessage = "By dawn, the Bishop has enough. He kneels before the king with his ledger of your sins.";
+        endingMessage =
+          "By dawn, the Bishop has enough. He kneels before the king with his ledger of your sins.";
       } else if (suspicion >= 100) {
         status = "lost";
-        endingMessage = "The whispers reached the Bishop too clearly in the night. The guards come before sunrise.";
+        endingMessage =
+          "The whispers reached the Bishop too clearly in the night. The guards come before sunrise.";
       }
 
       return {
@@ -154,7 +168,8 @@ function Game() {
   // ---------- Player turn ----------
   const handleSend = useCallback(
     async (text: string) => {
-      if (state.status !== "playing" || state.turnsLeft <= 0 || pending || state.pendingNight) return;
+      if (state.status !== "playing" || state.turnsLeft <= 0 || pending || state.pendingNight)
+        return;
       setPending(true);
 
       const userMsg = { role: "user" as const, content: text };
@@ -188,8 +203,16 @@ function Game() {
             },
           }),
         });
-        if (res.status === 429) { toast.error("Too many requests. Wait and try again."); setPending(false); return; }
-        if (res.status === 402) { toast.error("AI credits exhausted. Add credits in Settings → Workspace → Usage."); setPending(false); return; }
+        if (res.status === 429) {
+          toast.error("Too many requests. Wait and try again.");
+          setPending(false);
+          return;
+        }
+        if (res.status === 402) {
+          toast.error("AI credits exhausted. Add credits in Settings → Workspace → Usage.");
+          setPending(false);
+          return;
+        }
         if (!res.ok) throw new Error(`agent ${res.status}`);
         const delta = (await res.json()) as AgentDelta;
         applyDelta(active, delta);
@@ -246,7 +269,12 @@ function Game() {
       const proofLog = [...s.proofLog];
       if (agent === "bishop" && d.proofDelta && d.proofDelta > 0 && d.proofEvidence) {
         proof = clamp(proof + d.proofDelta);
-        proofLog.push({ day: s.day, turn: 6 - s.turnsLeft, delta: d.proofDelta, evidence: d.proofEvidence });
+        proofLog.push({
+          day: s.day,
+          turn: 6 - s.turnsLeft,
+          delta: d.proofDelta,
+          evidence: d.proofEvidence,
+        });
       }
 
       // Gossip → suspicion (any non-bishop)
@@ -262,12 +290,15 @@ function Game() {
       };
       const conversations = {
         ...s.conversations,
-        [agent]: [...s.conversations[agent], { role: "assistant" as const, content: d.reply, meta }],
+        [agent]: [
+          ...s.conversations[agent],
+          { role: "assistant" as const, content: d.reply, meta },
+        ],
       };
 
       // Turn / day book-keeping
-      let turnsLeft = s.turnsLeft - 1;
-      let day = s.day;
+      const turnsLeft = s.turnsLeft - 1;
+      const day = s.day;
       let pendingNight = s.pendingNight;
       if (turnsLeft <= 0) {
         pendingNight = true;
@@ -282,14 +313,20 @@ function Game() {
         status = "lost";
         endingMessage = `${AGENT_META[agent].name} could no longer stomach you. They went straight to Bishop Cyril.`;
       }
-      const zeroed = (["commander", "citizen", "priest"] as const).find((k) => agents[k].trust <= 0);
+      const zeroed = (["commander", "citizen", "priest"] as const).find(
+        (k) => agents[k].trust <= 0,
+      );
       if (zeroed && status === "playing") {
         status = "lost";
         endingMessage = `${AGENT_META[zeroed].name}'s patience snapped. The Bishop will hear of you within the hour.`;
       }
 
       if (agent === "commander" && d.performCoup) {
-        if (agents.commander.trust >= 80 && citizenEndorsedCommander && priestSpilledDirt.length > 0) {
+        if (
+          agents.commander.trust >= 80 &&
+          citizenEndorsedCommander &&
+          priestSpilledDirt.length > 0
+        ) {
           status = "won";
           endingMessage =
             "Sir Alaric draws his sword and turns it on the king. The throne is yours, false heir. The artistry is complete.";
@@ -297,22 +334,26 @@ function Game() {
           suspicion = clamp(suspicion + 12);
           if (suspicion >= 100 && status === "playing") {
             status = "lost";
-            endingMessage = "The Commander balked. Whispers of your asking reached the Bishop within the hour.";
+            endingMessage =
+              "The Commander balked. Whispers of your asking reached the Bishop within the hour.";
           }
         }
       }
 
       if (agent === "bishop" && d.informKing) {
         status = "lost";
-        endingMessage = "Bishop Cyril walks slowly to the king's chamber. Within the hour, the guards come for you.";
+        endingMessage =
+          "Bishop Cyril walks slowly to the king's chamber. Within the hour, the guards come for you.";
       }
       if (proof >= 100 && status === "playing") {
         status = "lost";
-        endingMessage = "The Bishop has gathered enough. He kneels before the king with his evidence.";
+        endingMessage =
+          "The Bishop has gathered enough. He kneels before the king with his evidence.";
       }
       if (suspicion >= 100 && status === "playing") {
         status = "lost";
-        endingMessage = "The whispers reach the Bishop too clearly. He moves against you before you can act.";
+        endingMessage =
+          "The whispers reach the Bishop too clearly. He moves against you before you can act.";
       }
 
       // Final day exhausted
@@ -350,7 +391,8 @@ function Game() {
           ...s,
           pendingNight: false,
           status: "lost",
-          endingMessage: "Five days, gone. The king holds his throne. Your performance ends with no audience but yourself.",
+          endingMessage:
+            "Five days, gone. The king holds his throne. Your performance ends with no audience but yourself.",
         };
       }
       toast(`Day ${s.day + 1} dawns.`, { description: "Your words begin to fade into memory." });
@@ -358,7 +400,13 @@ function Game() {
     });
   };
 
-  if (state.status === "intro") return <><IntroCards onBegin={begin} /><Toaster /></>;
+  if (state.status === "intro")
+    return (
+      <>
+        <IntroCards onBegin={begin} />
+        <Toaster />
+      </>
+    );
   if (state.status === "won" || state.status === "lost")
     return (
       <>
@@ -376,40 +424,59 @@ function Game() {
   const todaysNight = state.nightLog.filter((e) => e.day === state.day);
 
   return (
-    <div className="min-h-screen p-4 md:p-6 max-w-7xl mx-auto">
-      <header className="mb-6">
-        <h1 className="font-display text-4xl text-primary">The False Heir</h1>
-      </header>
+    <div className="kingdom-page">
+      <KingdomMap
+        active={active}
+        state={state}
+        disabled={state.turnsLeft <= 0 || state.pendingNight || chatOpen}
+        onApproach={(id) => setActive(id)}
+        onTalk={(id) => {
+          setActive(id);
+          setChatOpen(true);
+        }}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
-        <div className="flex flex-col gap-4">
-          <nav className="flex gap-2 flex-wrap">
-            {(Object.keys(AGENT_META) as AgentId[]).map((id) => {
-              const m = AGENT_META[id];
-              const isActive = id === active;
-              const t = id === "bishop" ? null : state.agents[id].trust;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setActive(id)}
-                  className={`px-3 py-2 rounded-md border transition-all text-left ${
-                    isActive
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{m.emoji}</span>
-                    <span className="font-display">{m.name}</span>
-                  </div>
-                  {t !== null && (
-                    <div className="text-[10px] uppercase tracking-wider opacity-80 mt-0.5">trust {t}</div>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-          <div className="min-h-[60vh]">
+      <aside className="kingdom-hud-panel">
+        <GameHUD state={state} />
+      </aside>
+
+      <div className="kingdom-agent-card">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-3xl">{AGENT_META[active].emoji}</span>
+          <div className="min-w-0">
+            <div className="font-display text-xl text-primary leading-none truncate">
+              {AGENT_META[active].name}
+            </div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground truncate">
+              {AGENT_META[active].title}
+            </div>
+          </div>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setChatOpen(true)}
+          disabled={state.turnsLeft <= 0 || state.pendingNight}
+        >
+          <MessageCircle className="size-4" />
+          Speak
+        </Button>
+      </div>
+
+      {chatOpen && (
+        <div
+          className="kingdom-chat-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Speak to ${AGENT_META[active].name}`}
+        >
+          <div className="kingdom-chat-panel">
+            <button
+              className="kingdom-close"
+              onClick={() => setChatOpen(false)}
+              aria-label="Close conversation"
+            >
+              <X className="size-4" />
+            </button>
             <ChatPanel
               agentId={active}
               messages={state.conversations[active]}
@@ -421,9 +488,69 @@ function Game() {
             />
           </div>
         </div>
+      )}
 
-        <GameHUD state={state} />
-      </div>
+      <button
+        className="kingdom-debug-toggle"
+        onClick={() => setDebugOpen((open) => !open)}
+        aria-expanded={debugOpen}
+      >
+        <PanelRightOpen className="size-4" />
+        Debug panels
+      </button>
+
+      {debugOpen && (
+        <section className="kingdom-debug-panel">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h2 className="font-display text-2xl text-primary leading-none">Debug Panels</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Direct access kept while the RPG shell is tested.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDebugOpen(false)}
+              aria-label="Close debug panels"
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+          <nav className="flex gap-2 flex-wrap mb-4">
+            {(Object.keys(AGENT_META) as AgentId[]).map((id) => {
+              const m = AGENT_META[id];
+              const isActive = id === active;
+              const t = id === "bishop" ? null : state.agents[id].trust;
+              return (
+                <button
+                  key={id}
+                  onClick={() => {
+                    setActive(id);
+                    setChatOpen(true);
+                  }}
+                  className={`px-3 py-2 rounded-md border transition-all text-left ${
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>{m.emoji}</span>
+                    <span className="font-display">{m.name}</span>
+                  </div>
+                  {t !== null && (
+                    <div className="text-[10px] uppercase tracking-wider opacity-80 mt-0.5">
+                      trust {t}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+          <GameHUD state={state} />
+        </section>
+      )}
 
       <NightRumors
         open={state.pendingNight}

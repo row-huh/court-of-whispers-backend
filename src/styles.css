@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -63,8 +63,8 @@
   --color-proof: var(--proof);
   --color-suspicion: var(--suspicion);
   --color-trust: var(--trust);
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 :root {
@@ -76,22 +76,22 @@
   --card-foreground: oklch(0.94 0.04 85);
   --popover: oklch(0.22 0.02 55);
   --popover-foreground: oklch(0.94 0.04 85);
-  --primary: oklch(0.78 0.15 78);          /* gold */
+  --primary: oklch(0.78 0.15 78); /* gold */
   --primary-foreground: oklch(0.18 0.02 60);
   --secondary: oklch(0.28 0.025 50);
   --secondary-foreground: oklch(0.94 0.04 85);
   --muted: oklch(0.26 0.02 50);
   --muted-foreground: oklch(0.7 0.03 70);
-  --accent: oklch(0.5 0.18 25);            /* blood red accent */
+  --accent: oklch(0.5 0.18 25); /* blood red accent */
   --accent-foreground: oklch(0.96 0.02 80);
   --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.32 0.025 60);
   --input: oklch(0.28 0.025 55);
   --ring: oklch(0.78 0.15 78);
-  --proof: oklch(0.6 0.22 30);             /* bishop's proof bar - blood */
-  --suspicion: oklch(0.55 0.2 320);        /* bishop suspicion - purple */
-  --trust: oklch(0.78 0.15 78);            /* gold */
+  --proof: oklch(0.6 0.22 30); /* bishop's proof bar - blood */
+  --suspicion: oklch(0.55 0.2 320); /* bishop suspicion - purple */
+  --trust: oklch(0.78 0.15 78); /* gold */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -156,5 +156,335 @@
       radial-gradient(ellipse at bottom, oklch(0.15 0.02 30 / 0.8), transparent 70%);
     background-attachment: fixed;
   }
-  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: 0.01em; }
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer components {
+  .kingdom-page {
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background:
+      linear-gradient(180deg, oklch(0.14 0.03 78), oklch(0.12 0.025 45)), var(--background);
+  }
+
+  .kingdom-shell {
+    min-height: 100vh;
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+  }
+
+  .kingdom-canvas {
+    width: min(100%, 1040px);
+    height: min(78vh, 760px);
+    min-height: 420px;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #0b0a10;
+    border: 4px solid oklch(0.29 0.04 58);
+    border-radius: 8px;
+    box-shadow:
+      0 24px 80px oklch(0 0 0 / 0.45),
+      inset 0 0 0 2px oklch(0.58 0.09 76 / 0.45);
+    outline: none;
+  }
+
+  .kingdom-map-ui {
+    position: absolute;
+    left: 50%;
+    width: min(calc(100% - 36px), 1040px);
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .kingdom-map-ui-top {
+    top: 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .kingdom-kicker {
+    width: fit-content;
+    padding: 2px 7px;
+    border: 1px solid oklch(0.76 0.13 78 / 0.55);
+    background: oklch(0.13 0.02 55 / 0.75);
+    color: var(--primary);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-family: monospace;
+  }
+
+  .kingdom-title {
+    margin-top: 5px;
+    font-family: var(--font-display);
+    font-size: clamp(28px, 4vw, 48px);
+    line-height: 0.95;
+    color: oklch(0.92 0.08 82);
+    text-shadow: 0 3px 0 oklch(0.09 0.02 40 / 0.8);
+  }
+
+  .kingdom-key-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 9px;
+    border: 1px solid oklch(0.36 0.04 58);
+    border-radius: 6px;
+    background: oklch(0.13 0.02 55 / 0.82);
+    color: oklch(0.83 0.05 84);
+    font-size: 12px;
+  }
+
+  .kingdom-key {
+    min-width: 24px;
+    padding: 2px 6px;
+    border: 1px solid oklch(0.62 0.11 75 / 0.7);
+    border-radius: 3px;
+    background: oklch(0.24 0.025 54 / 0.9);
+    color: var(--primary);
+    text-align: center;
+    font-family: monospace;
+    font-size: 11px;
+  }
+
+  .kingdom-map-ui-bottom {
+    bottom: 24px;
+    display: grid;
+    grid-template-columns: minmax(150px, 220px) 1fr;
+    gap: 12px;
+    align-items: end;
+    padding: 0 14px;
+  }
+
+  .kingdom-minimap {
+    width: 100%;
+    height: 108px;
+    image-rendering: pixelated;
+    border: 2px solid oklch(0.35 0.04 58);
+    border-radius: 5px;
+    background: #0b0a10;
+    box-shadow: 0 10px 34px oklch(0 0 0 / 0.35);
+  }
+
+  .kingdom-roster {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .kingdom-roster-item {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 7px;
+    row-gap: 1px;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid oklch(0.34 0.035 58 / 0.8);
+    border-radius: 6px;
+    background: oklch(0.13 0.02 55 / 0.78);
+    color: oklch(0.9 0.04 84);
+    font-size: 12px;
+    box-shadow: 0 10px 30px oklch(0 0 0 / 0.28);
+  }
+
+  .kingdom-roster-item.active {
+    border-color: var(--primary);
+    background: oklch(0.22 0.04 62 / 0.86);
+  }
+
+  .kingdom-roster-dot {
+    width: 9px;
+    height: 9px;
+    border: 1px solid oklch(0.95 0.04 84 / 0.55);
+    border-radius: 2px;
+    grid-row: span 2;
+  }
+
+  .kingdom-roster-item small {
+    color: var(--muted-foreground);
+    font-size: 10px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .kingdom-hud-panel {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 12;
+    width: min(340px, calc(100vw - 36px));
+    max-height: calc(100vh - 36px);
+    overflow-y: auto;
+    box-shadow: 0 20px 60px oklch(0 0 0 / 0.35);
+  }
+
+  .kingdom-hud-panel aside,
+  .kingdom-debug-panel aside {
+    background: oklch(0.17 0.025 54 / 0.93);
+    backdrop-filter: blur(10px);
+  }
+
+  .kingdom-agent-card {
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    z-index: 14;
+    width: min(390px, calc(100vw - 36px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: oklch(0.17 0.025 54 / 0.9);
+    box-shadow: 0 18px 55px oklch(0 0 0 / 0.36);
+    backdrop-filter: blur(10px);
+  }
+
+  .kingdom-chat-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    place-items: end center;
+    padding: 18px;
+    background: linear-gradient(180deg, oklch(0 0 0 / 0.15), oklch(0 0 0 / 0.55));
+  }
+
+  .kingdom-chat-panel {
+    position: relative;
+    width: min(840px, 100%);
+    height: min(74vh, 720px);
+    box-shadow: 0 26px 80px oklch(0 0 0 / 0.5);
+  }
+
+  .kingdom-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: oklch(0.15 0.02 55 / 0.95);
+    color: var(--foreground);
+  }
+
+  .kingdom-debug-toggle {
+    position: fixed;
+    left: 18px;
+    top: 18px;
+    z-index: 16;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: oklch(0.14 0.02 55 / 0.88);
+    color: var(--foreground);
+    font-size: 12px;
+    box-shadow: 0 14px 40px oklch(0 0 0 / 0.28);
+    backdrop-filter: blur(10px);
+  }
+
+  .kingdom-debug-panel {
+    position: fixed;
+    top: 62px;
+    left: 18px;
+    z-index: 25;
+    width: min(560px, calc(100vw - 36px));
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: oklch(0.15 0.025 54 / 0.96);
+    box-shadow: 0 22px 70px oklch(0 0 0 / 0.42);
+    backdrop-filter: blur(12px);
+  }
+
+  @media (max-width: 980px) {
+    .kingdom-shell {
+      align-items: start;
+      padding-top: 74px;
+      padding-bottom: 190px;
+    }
+
+    .kingdom-canvas {
+      height: 58vh;
+      min-height: 360px;
+    }
+
+    .kingdom-hud-panel {
+      top: auto;
+      right: 10px;
+      bottom: 92px;
+      width: min(330px, calc(100vw - 20px));
+      max-height: 42vh;
+    }
+
+    .kingdom-map-ui-bottom {
+      grid-template-columns: 1fr;
+      bottom: 86px;
+      pointer-events: none;
+    }
+
+    .kingdom-minimap {
+      display: none;
+    }
+
+    .kingdom-roster {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .kingdom-agent-card {
+      left: 10px;
+      bottom: 10px;
+      width: calc(100vw - 20px);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .kingdom-map-ui-top {
+      top: 52px;
+      padding: 8px;
+    }
+
+    .kingdom-title {
+      font-size: 28px;
+    }
+
+    .kingdom-key-row {
+      display: none;
+    }
+
+    .kingdom-hud-panel {
+      display: none;
+    }
+
+    .kingdom-chat-panel {
+      height: 82vh;
+    }
+  }
 }
