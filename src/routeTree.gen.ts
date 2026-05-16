@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiNightRouteImport } from './routes/api/night'
 import { Route as ApiAgentRouteImport } from './routes/api/agent'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNightRoute = ApiNightRouteImport.update({
+  id: '/api/night',
+  path: '/api/night',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAgentRoute = ApiAgentRouteImport.update({
@@ -26,27 +32,31 @@ const ApiAgentRoute = ApiAgentRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/agent': typeof ApiAgentRoute
+  '/api/night': typeof ApiNightRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/agent': typeof ApiAgentRoute
+  '/api/night': typeof ApiNightRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/agent': typeof ApiAgentRoute
+  '/api/night': typeof ApiNightRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/agent'
+  fullPaths: '/' | '/api/agent' | '/api/night'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/agent'
-  id: '__root__' | '/' | '/api/agent'
+  to: '/' | '/api/agent' | '/api/night'
+  id: '__root__' | '/' | '/api/agent' | '/api/night'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiAgentRoute: typeof ApiAgentRoute
+  ApiNightRoute: typeof ApiNightRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/night': {
+      id: '/api/night'
+      path: '/api/night'
+      fullPath: '/api/night'
+      preLoaderRoute: typeof ApiNightRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/agent': {
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiAgentRoute: ApiAgentRoute,
+  ApiNightRoute: ApiNightRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

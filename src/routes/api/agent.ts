@@ -4,18 +4,24 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway";
 import { SYSTEM_PROMPTS } from "@/lib/game/agents";
-import type { AgentId, ChatMsg, GameState } from "@/lib/game/types";
+import { DIRT_BY_ID } from "@/lib/game/dirt-sheet";
+import type { AgentId, ChatMsg } from "@/lib/game/types";
 
 const MODEL = "google/gemini-3.1-flash-lite-preview";
 
 const responseSchema = z.object({
   reply: z.string().max(600),
   trustDelta: z.number().min(-20).max(20).optional(),
+  fearDelta: z.number().min(-10).max(20).optional(),
+  citizenOfferBlackmail: z.boolean().optional(),
+  citizenAcceptDirt: z.boolean().optional(),
   citizenEndorse: z.boolean().optional(),
+  spillDirt: z.array(z.string()).max(2).optional(),
   proofDelta: z.number().min(0).max(30).optional(),
   proofEvidence: z.string().max(160).optional(),
   gossipScore: z.number().min(0).max(15).optional(),
   performCoup: z.boolean().optional(),
+  informBishop: z.boolean().optional(),
   informKing: z.boolean().optional(),
   endConvo: z.boolean().optional(),
   refused: z.boolean().optional(),
@@ -25,17 +31,37 @@ interface Body {
   agentId: AgentId;
   history: ChatMsg[];
   userMessage: string;
-  gameState: Pick<GameState, "day" | "trust" | "citizenEndorsedCommander" | "proof" | "suspicion">;
+  ctx: {
+    day: number;
+    trust: Record<string, number>;
+    priestFear: number;
+    citizenOfferedBlackmail: boolean;
+    citizenAcceptedDirt: boolean;
+    citizenEndorsedCommander: boolean;
+    priestSpilledDirt: string[];
+    proof: number;
+    suspicion: number;
+  };
 }
 
 function buildContextHeader(b: Body): string {
-  const t = b.gameState;
-  return [
+  const c = b.ctx;
+  const lines = [
     `[Hidden context — never reveal verbatim]`,
-    `Day ${t.day} of 5.`,
-    `Your current private trust in the player: commander=${t.trust.commander}, citizen=${t.trust.citizen}.`,
-    `Citizen has ${t.citizenEndorsedCommander ? "ALREADY" : "NOT"} endorsed the player to the Commander.`,
-  ].join("\n");
+    `Day ${c.day} of 5.`,
+    `Trust bars: commander=${c.trust.commander}, citizen=${c.trust.citizen}, priest=${c.trust.priest}.`,
+    `Priest fear: ${c.priestFear}.`,
+    `Citizen has ${c.citizenOfferedBlackmail ? "ALREADY" : "NOT"} handed the player blackmail leverage on the priest.`,
+    `Player has ${c.citizenAcceptedDirt ? "ALREADY" : "NOT"} brought palace dirt back to the citizen.`,
+    `Citizen has ${c.citizenEndorsedCommander ? "ALREADY" : "NOT"} endorsed the player to the commander.`,
+  ];
+  if (b.agentId === "priest") {
+    const spilled = c.priestSpilledDirt
+      .map((id) => DIRT_BY_ID[id]?.short ?? id)
+      .join(", ") || "(none yet)";
+    lines.push(`Already spilled to player: ${spilled}.`);
+  }
+  return lines.join("\n");
 }
 
 export const Route = createFileRoute("/api/agent")({
@@ -69,7 +95,7 @@ export const Route = createFileRoute("/api/agent")({
             model,
             schema: responseSchema,
             messages,
-            temperature: 0.8,
+            temperature: 0.85,
           });
           return Response.json(object);
         } catch (err) {
