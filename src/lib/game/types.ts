@@ -1,8 +1,9 @@
-export type AgentId = "commander" | "citizen" | "bishop";
+export type AgentId = "commander" | "citizen" | "priest" | "bishop";
 
 export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
+  meta?: { gossipScore?: number; trustDelta?: number; fearDelta?: number; spilled?: string[] };
 }
 
 export interface ProofEntry {
@@ -12,15 +13,39 @@ export interface ProofEntry {
   delta: number;
 }
 
+export interface NightExchange {
+  day: number;
+  from: AgentId;
+  to: AgentId;
+  line: string;
+  reply: string;
+  effects: {
+    suspicionDelta?: number;
+    proofDelta?: number;
+    proofEvidence?: string;
+    trustDeltas?: Partial<Record<AgentId, number>>;
+  };
+}
+
+export interface AgentBars {
+  trust: number; // 0..100 (start 30). Hit 0 -> instant loss.
+  fear: number;  // 0..100 (priest mainly): blackmail leverage
+}
+
 export interface GameState {
-  day: number;          // 1..5
-  turnsLeft: number;    // resets to 5 each day
-  proof: number;        // 0..100
-  suspicion: number;    // 0..100 (bishop suspicion)
-  trust: { commander: number; citizen: number }; // 0..100, commander capped at 70 unless endorsed
+  day: number;             // 1..5
+  turnsLeft: number;       // resets each day
+  proof: number;           // 0..100
+  suspicion: number;       // 0..100
+  agents: Record<Exclude<AgentId, "bishop">, AgentBars>; // bishop has no trust bar (he's the threat)
+  citizenOfferedBlackmail: boolean; // citizen handed you leverage on the priest
+  citizenAcceptedDirt: boolean;     // you brought dirt back to citizen -> she endorses
   citizenEndorsedCommander: boolean;
+  priestSpilledDirt: string[];      // ids from DIRT_SHEET the priest has spilled
   proofLog: ProofEntry[];
   conversations: Record<AgentId, ChatMsg[]>;
+  nightLog: NightExchange[];
+  pendingNight: boolean;            // true when a day just ended; show modal
   status: "intro" | "playing" | "won" | "lost";
   endingMessage?: string;
 }
@@ -30,22 +55,36 @@ export const initialGameState = (): GameState => ({
   turnsLeft: 5,
   proof: 0,
   suspicion: 0,
-  trust: { commander: 0, citizen: 0 },
+  agents: {
+    commander: { trust: 30, fear: 0 },
+    citizen: { trust: 30, fear: 0 },
+    priest: { trust: 30, fear: 0 },
+  },
+  citizenOfferedBlackmail: false,
+  citizenAcceptedDirt: false,
   citizenEndorsedCommander: false,
+  priestSpilledDirt: [],
   proofLog: [],
-  conversations: { commander: [], citizen: [], bishop: [] },
+  conversations: { commander: [], citizen: [], priest: [], bishop: [] },
+  nightLog: [],
+  pendingNight: false,
   status: "intro",
 });
 
 export interface AgentDelta {
   reply: string;
-  trustDelta?: number;     // commander/citizen
-  citizenEndorse?: boolean; // citizen only
-  proofDelta?: number;     // bishop only
-  proofEvidence?: string;  // bishop only
-  gossipScore?: number;    // commander/citizen only -> bishop suspicion
-  performCoup?: boolean;   // commander only
-  informKing?: boolean;    // bishop only
+  trustDelta?: number;
+  fearDelta?: number;          // priest
+  citizenOfferBlackmail?: boolean; // citizen: hands player leverage
+  citizenAcceptDirt?: boolean;     // citizen: dirt brought back, she's satisfied
+  citizenEndorse?: boolean;        // citizen: full endorsement of player to commander
+  spillDirt?: string[];            // priest: ids from DIRT_SHEET spilled this turn
+  proofDelta?: number;             // bishop
+  proofEvidence?: string;          // bishop
+  gossipScore?: number;            // 0..15, raises bishop suspicion (commander/citizen/priest)
+  performCoup?: boolean;           // commander
+  informBishop?: boolean;          // any non-bishop agent: rats you out -> loss
+  informKing?: boolean;            // bishop
   endConvo?: boolean;
   refused?: boolean;
 }
