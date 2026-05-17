@@ -9,8 +9,20 @@ import type { AgentId, ChatMsg } from "@/lib/game/types";
 
 const MODEL = "gemini-3.1-flash-lite";
 
+const MOODS = [
+  "neutral",
+  "happy",
+  "angry",
+  "sad",
+  "serious",
+  "shocked",
+  "smug",
+  "worried",
+] as const;
+
 const responseSchema = z.object({
   reply: z.string().max(600),
+  mood: z.enum(MOODS).optional(),
   trustDelta: z.number().min(-20).max(20).optional(),
   fearDelta: z.number().min(-10).max(20).optional(),
   citizenOfferBlackmail: z.boolean().optional(),

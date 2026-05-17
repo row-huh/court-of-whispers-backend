@@ -73,6 +73,7 @@ export const initialGameState = (): GameState => ({
 
 export interface AgentDelta {
   reply: string;
+  mood?: "neutral" | "happy" | "angry" | "sad" | "serious" | "shocked" | "smug" | "worried";
   trustDelta?: number;
   fearDelta?: number;          // priest
   citizenOfferBlackmail?: boolean; // citizen: hands player leverage

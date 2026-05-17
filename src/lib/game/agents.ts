@@ -23,6 +23,9 @@ visible courage, useful favors = positive.
 gossipScore (0..15): how alarming this exchange would sound if the Bishop's
 spies caught wind. Direct coup/treason/king-killing talk = high (8-15).
 Mundane = 0-2.
+
+mood: set to match the emotional tone of "reply". Use ONLY one of:
+neutral, happy, angry, sad, serious, shocked, smug, worried.
 `;
 
 const COMMANDER = `${SHARED_RULES}
